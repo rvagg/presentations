@@ -80,6 +80,7 @@
           <h3>LSM-tree</h3>
           <ul>
             <li>Writes (put &amp; delete) go straight into a <b>log</b>, in memory and on disk</li>
+            <img style="float: right; width: 50%; margin: -0.5em -1em 0.5em 0.5em;" src="img/leveldb_simple.svg">
             <li>Log reaches size limit and is <b>flushed</b> in to multiple sorted table files</li>
             <li>Reads involve a <b>merging</b> of the log and the table files to discover current entries</li>
             <li>Configurable LRU cache stores keys &amp; values to speed up common lookups</li>
@@ -92,11 +93,9 @@
           <ul>
             <li>Limited to ~2Mb each by default</li>
             <li>Divided into independently readable 4K <b>blocks</b></li>
-            <li>Multiple entries per <i>block</i> &amp; multiple <i>blocks</i> per entry</li>
-            <li>Index at the footer of each table file</li>
-            <li>Index references <b>restarts</b>, positioned every 16 entries</li>
-            <li>Bloom-filter used for best guess <i>restart</i> for lookups</li>
-            <li>Keys can have <b>shared</b> prefixes within blocks</li>
+            <li>Final block is an <b>index</b>, mapping start-keys to blocks</li>
+            <li><b>Bloom filter</b> used on for best guess block for lookups</li>
+            <li>Keys can have <b>shared prefixes</b> within blocks</li>
           </ul>
         </section>
 
@@ -128,6 +127,10 @@
             </tbody>
           </table>
           <p style="margin-top: 1em; text-align: center;"><small>0 &Rarr; 4 sst, 1 &Rarr; 10M, 2 &Rarr; 100M, 3 &Rarr; 1G, 4 &Rarr; 10G, 5 &Rarr; 100G, 6 &Rarr; 1T, 7 &Rarr; 10T</small></p>
+
+          <p class="fragment" style="position: absolute; top: 3.2em; width: 100%; height: 100%; text-align: center;">
+            <img style="width: 68%;" src="img/leveldb_levels.svg">
+          </p>
         </section>
 
         <!-- Example of nested vertical slides -->
