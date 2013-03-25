@@ -45,56 +45,45 @@
         <section>
           <h2>What?</h2>
           <ul>
-            <li>An open-source, dependency-free, embedded key/value datastore</li>
+            <li>Open-source, dependency-free, embedded key/value datastore</li>
             <li>Developed in 2011 by Jeff Dean and Sanjay Ghemawat from Google</li>
             <li>Based on ideas in Google's BigTable</li>
-            <li>Initially used as the store behind Chrome's IndexedDB</li>
+            <li>Initially designed for Chrome</li>
           </ul>
         </section>
 
         <section>
           <h2>Features</h2>
           <ul>
-            <li>Keys and values are arbitrary strings of bytes</li>
-            <li>Sorted by keys (pluggable comparator function)</li>
+            <li>Arbitrary byte arrays</li>
+            <li>Sorted by keys</li>
             <li>Values are compressed with Snappy</li>
             <li>Basic perations: <code>Get(), Put(), Del(), Batch()</code></li>
-            <li>Iterators start &amp; end anywhere, bi-directional</li>
+            <li>Bi-directional iterators</li>
             <li>Snapshots</li>
           </ul>
-        </section>
-
-        <section>
-          <h2>Negatives?</h2>
-          <ul>
-            <li>Single process access only (threads OK)</li>
-            <li>Simple key / value store, basic operations, no SQL</li>
-            <li>Heavy reliance on OS filesystem interface for performance</li>
-          </ul>
-
-          <p>These are only negatives when viewed from a traditional "database" perspective</p>
         </section>
 
         <section>
           <h2>Basic architecture</h2>
           <h3>LSM-tree</h3>
           <ul>
-            <li>Writes (put &amp; delete) go straight into a <b>log</b>, in memory and on disk</li>
-            <img style="float: right; width: 50%; margin: -0.5em -1em 0.5em 0.5em;" src="img/leveldb_simple.svg">
-            <li>Log reaches size limit and is <b>flushed</b> in to multiple sorted table files</li>
-            <li>Reads involve a <b>merging</b> of the log and the table files to discover current entries</li>
-            <li>Configurable LRU cache stores keys &amp; values to speed up common lookups</li>
+            <li>Writes go straight into a <b>log</b></li>
+            <img style="float: right; width: 50%; margin: 0 -1em 0 0.5em;" src="img/leveldb_simple.svg">
+            <li>Log is <b>flushed</b> to sorted table files (SST)</li>
+            <li>Reads <b>merge</b> the log and the table files</li>
+            <li>Cache speeds up common reads</li>
           </ul>
         </section>
 
         <section>
           <h2>Basic architecture</h2>
-          <h3>Sorted table files (sst)</h3>
+          <h3>Sorted table files (SST)</h3>
           <ul>
-            <li>Limited to ~2Mb each by default</li>
-            <li>Divided into independently readable 4K <b>blocks</b></li>
-            <li>Final block is an <b>index</b>, mapping start-keys to blocks</li>
-            <li><b>Bloom filter</b> used on for best guess block for lookups</li>
+            <li>Limited to ~2MB each</li>
+            <li>Divided into 4K <b>blocks</b></li>
+            <li>Final block is an <b>index</b></li>
+            <li><b>Bloom filter</b> used for lookups</li>
             <li>Keys can have <b>shared prefixes</b> within blocks</li>
           </ul>
         </section>
@@ -106,19 +95,19 @@
             <tbody>
               <tr>
                 <th style="text-align: right; font-weight: bold;">Log:</th>
-                <td style="padding-left: 0.5em;">Max size of 4Mb then flushed into a set of Level 0 sst files</td>
+                <td style="padding-left: 0.5em;">Max size of 4MB then flushed into a set of Level 0 SST files</td>
               </tr>
               <tr>
                 <th style="text-align: right; font-weight: bold;">Level&nbsp;0:</th>
-                <td style="padding-left: 0.5em;">Max of 4 sst files then one file compacted into Level 1</td>
+                <td style="padding-left: 0.5em;">Max of 4 SST files then one file compacted into Level 1</td>
               </tr>
               <tr>
                 <th style="text-align: right; font-weight: bold;">Level&nbsp;1:</th>
-                <td style="padding-left: 0.5em;">Max total size of 10Mb then one file compacted into Level 2</td>
+                <td style="padding-left: 0.5em;">Max total size of 10MB then one file compacted into Level 2</td>
               </tr>
               <tr>
                 <th style="text-align: right; font-weight: bold;">Level&nbsp;2:</th>
-                <td style="padding-left: 0.5em;">Max total size of 100Mb then one file compacted into Level 3</td>
+                <td style="padding-left: 0.5em;">Max total size of 100MB then one file compacted into Level 3</td>
               </tr>
               <tr>
                 <th style="text-align: right; font-weight: bold;">Level&nbsp;3+:</th>
@@ -126,7 +115,7 @@
               </tr>
             </tbody>
           </table>
-          <p style="margin-top: 1em; text-align: center;"><small>0 &Rarr; 4 sst, 1 &Rarr; 10M, 2 &Rarr; 100M, 3 &Rarr; 1G, 4 &Rarr; 10G, 5 &Rarr; 100G, 6 &Rarr; 1T, 7 &Rarr; 10T</small></p>
+          <p style="margin-top: 1em; text-align: center;"><small>0 &Rarr; 4 SST, 1 &Rarr; 10M, 2 &Rarr; 100M, 3 &Rarr; 1G, 4 &Rarr; 10G, 5 &Rarr; 100G, 6 &Rarr; 1T, 7 &Rarr; 10T</small></p>
 
           <p class="fragment" style="position: absolute; top: 3.2em; width: 100%; height: 100%; text-align: center;">
             <img style="width: 68%;" src="img/leveldb_levels.svg">
@@ -135,31 +124,41 @@
 
         <!-- Example of nested vertical slides -->
         <section>
-          <h2>Batches, iterators &amp; snapshots</h2>
+          <h2>Advanced features</h2>
           <p>
-            <b><code>Batch</code> writes</b>, consist of a list of <code>Put</code> and/or <code>Del</code> operations and may be considered to be <b>atomic</b>.
+            <b><code>Batch</code></b>: <code>Put</code> and/or <code>Del</code>, are <b>atomic</b>.
           </p>
-          <p>An <b><code>Iterator</code></b> provides a way to navigate forward and backward through the store, starting and ending at any key.</p>
-          <p>A <b><code>Snapshot</code></b> creates a consistent view of the whole data store as of the time it is created. <b>Iterators</b> create an implicit snapshot, active during their lifetime.</p>
+          <p><b><code>Iterator</code></b>: navigate forward and backward, starting and ending at any key.</p>
+          <p><b><code>Snapshot</code></b>: consistent view of the whole data store. Iterators create an implicit snapshot.</p>
         </section>
 
         <section>
           <h2>LevelUP &amp; LevelDOWN</h2>
-          <p><b>LevelDOWN</b> is 99% C++ code, providing an interface layer between Node.js/V8/libuv and LevelDB. Exposes basic LevelDB operations with limited <i>sugar</i>. Completely async.</p>
-          <p><b>LevelUP</b> wraps LevelDOWN to provide a Node.js-style interface to LevelDB.</p>
+          <h4 style="margin-top: 1em;">LevelDOWN</h4>
+          <p>C++ interface between Node.js and LevelDB:</p>
           <ul>
-            <li>Sugar: optional arguments, deferred-till-open operations</li>
-            <li>Safety: less <i>foot-gun</i> than LevelDOWN</li>
-            <li>Streams! Iterators are exposed as a <code>ReadStream</code>, a <code>WriteStream</code> can wrap <code>Put</code> and <code>Batch</code> operations</li>
+            <li>Limited <i>sugar</i></li>
+            <li>Async</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>LevelUP &amp; LevelDOWN</h2>
+          <h4 style="margin-top: 1em;">LevelUP</h4>
+          <p>Wrap LevelDOWN to provide a Node.js-style interface:</p>
+          <ul>
+            <li>Sugar: optional args, deferred-till-open</li>
+            <li>Safety: less <i>foot-gun</i></li>
+            <li>Streams!</li>
             <li>JSON &amp; other encoding types</li>
           </ul>
         </section>
 
         <section>
           <h2>LevelUP: Simple example</h2>
-          <pre><code contenteditable>var leveldb = require('levelup')
+          <pre><code contenteditable>var levelup = require('levelup')
 
-leveldb('/tmp/dprk.db', function (err, db) {
+levelup('/tmp/dprk.db', function (err, db) {
   db.put('name', 'Kim Jong-un', function (err) {
     db.batch([
         { type: 'put', key: 'spouse', value: 'Ri Sol-ju' }
@@ -179,28 +178,41 @@ leveldb('/tmp/dprk.db', function (err, db) {
 
         <section>
           <h2>LevelUP: basic operations</h2>
-          <h4 style="margin-top: 0.3em;">create / open / close</h4>
-          <pre><code contenteditable>leveldb('/path/to/database', function (err, db) { /* use `db` */ })
+          <h4 style="margin-top: 1em;">create / open / close</h4>
+          <pre><code contenteditable>levelup('/path/to/database', function (err, db) {
+  /* use `db` */
+})
+
 // or
-var db = leveldb('/path/to/database')
+
+var db = levelup('/path/to/database')
 // use `db`, operations are queued till `open` is complete
+
+// close to clean up
 
 db.close(function (err) { /* ... */ })
 </code></pre>
+        </section>
 
-          <h4 style="margin-top: 0.3em;">put / delete / get</h4>
+        <section>
+          <h2>LevelUP: basic operations</h2>
+          <h4 style="margin-top: 1em;">put / delete / get</h4>
           <pre><code contenteditable>db.put('key', 'value', function (err) { /* ... */ })
 
 db.del('key', function (err) { /* ... */ })
 
 db.get('key', function (err, value) { /* ... */ })
 </code></pre>
+        </section>
 
-          <h4 style="margin-top: 0.3em;">batch</h4>
-          <pre><code contenteditable>var operations = [
+        <section>
+          <h2>LevelUP: basic operations</h2>
+          <h4 style="margin-top: 1em;">batch</h4>
+          <pre><code style="font-size: 1em;" contenteditable>var operations = [
     { type: 'put', key: 'Franciscus', value: 'Jorge Mario Bergoglio' }
   , { type: 'del', key: 'Benedictus XVI' }
 ]
+
 db.batch(operations, function (err) { /* ... */ })
 </code></pre>
         </section>
@@ -210,7 +222,7 @@ db.batch(operations, function (err) { /* ... */ })
           <pre><code contenteditable>var rs = db.createReadStream()
 rs.on('error', function (err) { /* handle err */ })
 rs.on('data' , function (data) { /* data.key &amp; data.value */ })
-rs.on('close', function () { /* stream finished &amp; cleaned up */ })
+rs.on('close', function () { /* stream finished */ })
 </code></pre>
 
           <h3 style="margin-top: 0.5em;">Options! Oh my!</h3>
@@ -224,8 +236,12 @@ rs.on('close', function () { /* stream finished &amp; cleaned up */ })
   , fillCache : false
 })
 </code></pre>
+        </section>
 
-          <p>Standard readable stream operations are also supported: <code>pause()</code>, <code>resume()</code>, <code>destroy()</code> and <code>pipe()</code></p>
+        <section>
+          <h2>LevelUP: Streams</h2>
+
+          <p>Standard readable stream operations are also supported:</p>
 
        <pre><code contenteditable>function copy (srcdb, destdb, callback) {
   srcdb.createReadStream()
@@ -258,7 +274,7 @@ db.put(
 )
 </code></pre>
 
-          <p>Use <code>keyEncoding</code> and <code>valueEncoding</code> to support utf8 <code>String</code>s (default), JSON serialised objects and <code>Buffer</code>s with different encodings.</p>
+          <p><code>keyEncoding</code> and <code>valueEncoding</code>: utf8 (default), JSON, <code>Buffer</code> encoding types.</p>
         </section>
 
         <section>
@@ -267,7 +283,10 @@ db.put(
           <pre><code contenteditable>function variance (db, prefix, callback) {
   var n = 0, m2 = 0
 
-  db.createReadStream({ start: prefix + ':', end: prefix + ':\xFF' })
+  db.createReadStream({
+        start : prefix + ':'
+      , end   : prefix + ':\xFF'
+    })
     .on('data', function (data) {
       var delta = data.value - mean
       mean += delta / ++n

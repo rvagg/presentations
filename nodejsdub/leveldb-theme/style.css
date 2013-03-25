@@ -47,6 +47,11 @@ img#leveldb {
   text-shadow: none;
 }
 
+.reveal code {
+  font-family: "Century Schoolbook Monospace", monospace;
+  font-size: 1.1em;
+}
+
 .reveal p {
   text-align: left;
   margin-top: 1em;
@@ -87,6 +92,11 @@ img#leveldb {
 .reveal h3 {
   xtext-align: left;
 }
+
+.reveal h4 {
+  font-size: 1.2em;
+}
+
 
 /*********************************************
  * LINKS
